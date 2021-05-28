@@ -6,19 +6,52 @@
  */
 #include <IRLibSendBase.h>    //We need the base code
 #include <IRLib_HashRaw.h>    //Only use raw sender
-#include <dht.h>
+#include <Adafruit_Sensor.h>
+#include <DHT.h>
 
-//#define dht_apin A0 // Analog Pin sensor is connected to
- 
-//dht DHT;
+#define DHTPIN A1 // Analog Pin sensor is connected to
+#define DHTTYPE DHT11
+
+DHT dht(DHTPIN, DHTTYPE);
 
 IRsendRaw mySender;
 
+String readDHTTemperature() {
+  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+  // Read temperature as Celsius (the default)
+  float t = dht.readTemperature();
+  // Read temperature as Fahrenheit (isFahrenheit = true)
+  //float t = dht.readTemperature(true);
+  // Check if any reads failed and exit early (to try again).
+  if (isnan(t)) {    
+    Serial.println("Failed to read from DHT sensor!");
+    return "--";
+  }
+  else {
+    Serial.println(t);
+    return String(t);
+  }
+}
+
+String readDHTHumidity() {
+  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+  float h = dht.readHumidity();
+  if (isnan(h)) {
+    Serial.println("Failed to read from DHT sensor!");
+    return "--";
+  }
+  else {
+    Serial.println(h);
+    return String(h);
+  }
+}
+
 void setup() {
   Serial.begin(9600);
+  dht.begin();
   delay(2000); 
-  while (!Serial); //delay for Leonardo
-//  Serial.println("DHT11 Humidity & temperature Sensor\n\n");
+  while (!Serial);
+  Serial.println("DHT11 Humidity & temperature Sensor\n\n");
 }
 /* Cut and paste the output from "rawRecv.ino" below here. It will 
  * consist of a #define RAW_DATA_LEN statement and an array definition
@@ -39,11 +72,16 @@ uint16_t rawData[RAW_DATA_LEN]={
    
 void loop() {
 
-//  DHT.read11(dht_apin);
-//  int temp = DHT.temperature;
+  String temperature = readDHTTemperature();
+  String humidity = readDHTHumidity();
+  delay(3000);
 //  Serial.print("temperature = ");
-//  Serial.print(temp); 
+//  Serial.print(temperature); 
 //  Serial.println(" C");
+//  
+//  Serial.print("humidity = ");
+//  Serial.print(humidity); 
+//  Serial.println("%");
 //  if (temp > 29) {
 //    mySender.send(rawDataOn,RAW_DATA_LEN,36);//Pass the buffer,length, optionally frequency
 //    Serial.println(F("AC Switched On"));
@@ -53,7 +91,7 @@ void loop() {
 //    Serial.println(F("AC Switched Off"));
 //  }
 
-    mySender.send(rawData, RAW_DATA_LEN, 36);
-    Serial.println(F("Sent IR signal"));
-    delay(5000);
+//    mySender.send(rawData, RAW_DATA_LEN, 36);
+//    Serial.println(F("Sent IR signal"));
+//    delay(20);
 }
