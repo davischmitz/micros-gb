@@ -6,51 +6,20 @@
  */
 #include <IRLibSendBase.h>    //We need the base code
 #include <IRLib_HashRaw.h>    //Only use raw sender
-#include <Adafruit_Sensor.h>
-#include <DHT.h>
+#include <dht.h>
 
-#define DHTPIN A1 // Analog Pin sensor is connected to
-#define DHTTYPE DHT11
-
-DHT dht(DHTPIN, DHTTYPE);
+#define dht_apin A0 // Analog Pin sensor is connected to
+ 
+dht DHT;
 
 IRsendRaw mySender;
 
-String readDHTTemperature() {
-  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
-  // Read temperature as Celsius (the default)
-  float t = dht.readTemperature();
-  // Read temperature as Fahrenheit (isFahrenheit = true)
-  //float t = dht.readTemperature(true);
-  // Check if any reads failed and exit early (to try again).
-  if (isnan(t)) {    
-    Serial.println("Failed to read from DHT sensor!");
-    return "--";
-  }
-  else {
-    Serial.println(t);
-    return String(t);
-  }
-}
-
-String readDHTHumidity() {
-  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
-  float h = dht.readHumidity();
-  if (isnan(h)) {
-    Serial.println("Failed to read from DHT sensor!");
-    return "--";
-  }
-  else {
-    Serial.println(h);
-    return String(h);
-  }
-}
+bool sinalEnviado = false;
 
 void setup() {
   Serial.begin(9600);
-  dht.begin();
   delay(2000); 
-  while (!Serial);
+  while (!Serial); //delay for Leonardo
   Serial.println("DHT11 Humidity & temperature Sensor\n\n");
 }
 /* Cut and paste the output from "rawRecv.ino" below here. It will 
@@ -58,40 +27,30 @@ void setup() {
  * beginning with "uint16_t rawData[RAW_DATA_LEN]= {…" and concludes
  * with "…,1000};"
  */
-#define RAW_DATA_LEN 68
+#define RAW_DATA_LEN 42
 uint16_t rawData[RAW_DATA_LEN]={
-  4466, 4450, 578, 1650, 574, 1638, 574, 1654, 
-  574, 534, 574, 542, 570, 534, 574, 542, 
-  570, 526, 574, 1654, 570, 1642, 574, 1658, 
-  570, 534, 574, 542, 574, 530, 574, 542, 
-  574, 530, 574, 534, 574, 1646, 574, 542, 
-  570, 534, 574, 542, 570, 534, 574, 542, 
-  570, 526, 574, 1658, 574, 526, 570, 1650, 
-  570, 1646, 566, 1658, 566, 1650, 566, 1658, 
-  570, 1642, 570, 1000};
+  2518, 1030, 326, 1010, 326, 574, 322, 574, 
+  322, 1010, 746, 602, 294, 602, 294, 598, 
+  298, 598, 298, 598, 298, 598, 298, 602, 
+  294, 602, 294, 598, 298, 602, 298, 594, 
+  298, 602, 742, 594, 298, 1034, 302, 598, 
+  298, 1000};
+
+/*
+ * Cut-and-paste into the area above.
+ */
    
 void loop() {
 
-  String temperature = readDHTTemperature();
-  String humidity = readDHTHumidity();
-  delay(3000);
-//  Serial.print("temperature = ");
-//  Serial.print(temperature); 
-//  Serial.println(" C");
-//  
-//  Serial.print("humidity = ");
-//  Serial.print(humidity); 
-//  Serial.println("%");
-//  if (temp > 29) {
-//    mySender.send(rawDataOn,RAW_DATA_LEN,36);//Pass the buffer,length, optionally frequency
-//    Serial.println(F("AC Switched On"));
-//  }
-//  else if (temp < 26) {
-//    mySender.send(rawDataOff,RAW_DATA_LEN,36);//Pass the buffer,length, optionally frequency
-//    Serial.println(F("AC Switched Off"));
-//  }
-
-//    mySender.send(rawData, RAW_DATA_LEN, 36);
-//    Serial.println(F("Sent IR signal"));
-//    delay(20);
+  DHT.read11(dht_apin);
+  int temp = DHT.temperature;
+  Serial.print("temperature = ");
+  Serial.print(temp); 
+  Serial.println(" C");
+  if (temp > 20 && !sinalEnviado) {
+    mySender.send(rawData,RAW_DATA_LEN,36);//Pass the buffer,length, optionally frequency
+    Serial.println(F("AC Switched On"));
+    sinalEnviado = true;
+  }
+  delay(2000);
 }
