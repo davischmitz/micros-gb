@@ -4,21 +4,50 @@
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 
+#include <IRLibSendBase.h>
+#include <IRLib_HashRaw.h>
+
 // Replace with your network credentials
 const char* ssid = "Schmitz";
 const char* password = "SchmitzNet";
 
-#define DHTPIN 5     // Digital pin connected to the DHT sensor
-
-// Uncomment the type of sensor in use:
-#define DHTTYPE    DHT11     // DHT 11
-//#define DHTTYPE    DHT22     // DHT 22 (AM2302)
-//#define DHTTYPE    DHT21     // DHT 21 (AM2301)
-
+//DHT 11 config
+#define DHTPIN 5 // Pino conectado ao DHT 11
+#define DHTTYPE DHT11
 DHT dht(DHTPIN, DHTTYPE);
 
-// Create AsyncWebServer object on port 80
+// IR Sender config
+IRsendRaw irSender;
+
+#define RAW_DATA_LEN 68
+uint16_t AC_POWER_BUTTON[RAW_DATA_LEN]={
+  4466, 4450, 578, 1650, 574, 1638, 574, 1654, 
+  574, 534, 574, 542, 570, 534, 574, 542, 
+  570, 526, 574, 1654, 570, 1642, 574, 1658, 
+  570, 534, 574, 542, 574, 530, 574, 542, 
+  574, 530, 574, 534, 574, 1646, 574, 542, 
+  570, 534, 574, 542, 570, 534, 574, 542, 
+  570, 526, 574, 1658, 574, 526, 570, 1650, 
+  570, 1646, 566, 1658, 566, 1650, 566, 1658, 
+  570, 1642, 570, 1000};
+
+bool isAcOn = false;
+
+// Web server config
 AsyncWebServer server(80);
+
+void toggleAc() {
+  irSender.send(AC_POWER_BUTTON, RAW_DATA_LEN, 36)
+  isAcOn = !isAcOn;
+}
+
+void handleAcControl(float h) {
+  if (h >= 25) {
+    toggleAc();
+  } else if (h <= 20) {
+    toggleAc();
+  }
+}
 
 String readDHTTemperature() {
   // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
@@ -40,14 +69,17 @@ String readDHTTemperature() {
 String readDHTHumidity() {
   // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
   float h = dht.readHumidity();
+  // A leitura do sensor pode demorar até 2s para ser feita, nesse caso é exibido o erro na serial
   if (isnan(h)) {
     Serial.println("Failed to read from DHT sensor!");
     return "--";
   }
-  else {
-    Serial.println(h);
-    return String(h);
-  }
+
+  Serial.println(h);
+  
+  handleAcControl(h);  
+  
+  return String(h);
 }
 
 const char index_html[] PROGMEM = R"rawliteral(
@@ -115,16 +147,16 @@ setInterval(function ( ) {
 // Replaces placeholder with DHT values
 String processor(const String& var){
   //Serial.println(var);
-  if(var == "TEMPERATURE"){
+  if(var == "TEMPERATURE") {
     return readDHTTemperature();
   }
-  else if(var == "HUMIDITY"){
+  else if(var == "HUMIDITY") {
     return readDHTHumidity();
   }
   return String();
 }
 
-void setup(){
+void setup() {
   // Serial port for debugging purposes
   Serial.begin(115200);
 
