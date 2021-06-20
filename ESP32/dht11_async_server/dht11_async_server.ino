@@ -8,8 +8,8 @@
 #include <IRsend.h>
 
 // Replace with your network credentials
-const char* ssid = "Schmitz";
-const char* password = "SchmitzNet";
+const char* ssid = "*";
+const char* password = "*";
 
 //DHT 11 config
 #define DHTPIN 5 // Pino conectado ao DHT 11
